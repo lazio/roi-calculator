@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROI Calculator</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .form-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .step {
+            display: none;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        .buttons {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #results {
+            margin-top: 20px;
+        }
+
+        .chart-container {
+            margin-top: 20px;
+            height: 300px;
+        }
+
+        .tooltip-icon {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            background-color: #007bff;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            font-size: 12px;
+            line-height: 18px;
+            margin-left: 5px;
+            cursor: help;
+            position: relative;
+        }
+
+        .tooltip-icon:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            left: 100%;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: #333;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 1000;
+            margin-left: 10px;
+        }
+
+        .default-button {
+            background-color: #6c757d;
+            margin-bottom: 20px;
+            position: absolute;
+            width: 100px;
+            right: 0;
+            font-size: 10px;
+            bottom: 2px;
+        }
+
+        .default-button:hover {
+            background-color: #5a6268;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        input::placeholder {
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <form id="roiForm">
+            <!-- Step 1 -->
+            <div class="step active" id="step1">
+                <h2>Basic Information</h2>
+                <div class="form-group">
+                    <label for="name">Name</label>
+                    <input type="text" id="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Business Email</label>
+                    <input type="email" id="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="company">Company Name</label>
+                    <input type="text" id="company" required>
+                </div>
+                <div class="form-group">
+                    <label for="role">Role</label>
+                    <select id="role" required>
+                        <option value="manager">Manager</option>
+                        <option value="c-level">C-Level</option>
+                        <option value="founder">Founder</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="industry">Industry</label>
+                    <select id="industry" required>
+                        <option value="saas">SaaS</option>
+                        <option value="fintech">Fintech</option>
+                        <option value="healthtech">Healthtech</option>
+                        <option value="ecommerce">E-commerce</option>
+                        <option value="marketplace">Marketplace</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="appType">Application Type</label>
+                    <select id="appType" required>
+                        <option value="mvp">MVP</option>
+                        <option value="website">Website</option>
+                        <option value="redesign">Redesign</option>
+                        <option value="mobile">Mobile App</option>
+                    </select>
+                </div>
+                <div class="buttons">
+                    <button type="button" onclick="nextStep()">Next</button>
+                </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="step" id="step2">
+                <h2>Investment Details</h2>
+                <div class="form-group">
+                    <label for="implementationCost">
+                        Implementation Investment (USD)
+                        <span class="tooltip-icon" data-tooltip="Based on average for this type of application">?</span>
+                    </label>
+                    <div class="input-group">
+                        <input type="number" id="implementationCost" placeholder="Enter amount" required>
+                        <button type="button" class="default-button" onclick="useDefaultImplementation()">Use Default</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="marketingCost">
+                        Marketing Investment (USD)
+                        <span class="tooltip-icon" data-tooltip="Based on average marketing spend">?</span>
+                    </label>
+                    <div class="input-group">
+                        <input type="number" id="marketingCost" placeholder="Enter amount (default: 5000)" required>
+                    </div>
+                    <button type="button" class="default-button" onclick="useDefaultMarketing()">Use Default</button>
+                </div>
+                <div class="form-group">
+                    <label for="returnedAmount">
+                        Expected Return Amount (USD)
+                        <span class="tooltip-icon" data-tooltip="Based on average revenue for this industry">?</span>
+                    </label>
+                    <div class="input-group">
+                        <input type="number" id="returnedAmount" placeholder="Enter amount" required>
+                    </div>
+                    <button type="button" class="default-button" onclick="useDefaultReturn()">Use Default</button>
+                </div>
+                
+                <div class="buttons">
+                    <button type="button" onclick="previousStep()">Previous</button>
+                    <button type="button" onclick="calculateROI()">Calculate ROI</button>
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div class="step" id="results">
+                <h2>ROI Results</h2>
+                <div id="resultText"></div>
+                <div class="chart-container">
+                    <canvas id="roiChart"></canvas>
+                </div>
+                <div class="buttons">
+                    <button type="button" onclick="previousStep()">Back</button>
+                    <button type="button" onclick="resetForm()">Start Over</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        let currentStep = 1;
+        let chart = null;
+
+        // Default implementation costs by app type
+        const defaultCosts = {
+            mvp: 30000,
+            website: 15000,
+            redesign: 20000,
+            mobile: 40000
+        };
+
+        // Average revenue by industry (example values)
+        const averageRevenue = {
+            saas: 100000,
+            fintech: 150000,
+            healthtech: 120000,
+            ecommerce: 80000,
+            marketplace: 130000
+        };
+
+        function nextStep() {
+            if (validateCurrentStep()) {
+                document.getElementById(`step${currentStep}`).classList.remove('active');
+                currentStep++;
+                document.getElementById(`step${currentStep}`).classList.add('active');
+
+                if (currentStep === 2) {
+                    updatePlaceholders();
+                }
+            }
+        }
+
+        function previousStep() {
+            document.getElementById(`step${currentStep}`).classList.remove('active');
+            currentStep--;
+            document.getElementById(`step${currentStep}`).classList.add('active');
+        }
+
+        function updatePlaceholders() {
+            const appType = document.getElementById('appType').value;
+            const industry = document.getElementById('industry').value;
+            
+            document.getElementById('implementationCost').placeholder = 
+                `Suggested amount: $${defaultCosts[appType].toLocaleString()}`;
+            document.getElementById('marketingCost').placeholder = 
+                'Suggested amount: $5,000';
+            document.getElementById('returnedAmount').placeholder = 
+                `Suggested amount: $${averageRevenue[industry].toLocaleString()}`;
+        }
+
+        function useDefaultImplementation() {
+            const appType = document.getElementById('appType').value;
+            const industry = document.getElementById('industry').value;
+            
+            document.getElementById('implementationCost').value = defaultCosts[appType];
+        }
+        function useDefaultReturn() {
+            const appType = document.getElementById('appType').value;
+            const industry = document.getElementById('industry').value;
+            
+            document.getElementById('returnedAmount').value = averageRevenue[industry];
+        }
+        function useDefaultMarketing() {
+            const appType = document.getElementById('appType').value;
+            const industry = document.getElementById('industry').value;
+            document.getElementById('marketingCost').value = 5000;
+            
+        }
+
+        function validateCurrentStep() {
+            const currentStepElement = document.getElementById(`step${currentStep}`);
+            const inputs = currentStepElement.querySelectorAll('input, select');
+            return Array.from(inputs).every(input => input.checkValidity());
+        }
+
+        function calculateROI() {
+            const implementationCost = parseFloat(document.getElementById('implementationCost').value);
+            const marketingCost = parseFloat(document.getElementById('marketingCost').value);
+            const returnedAmount = parseFloat(document.getElementById('returnedAmount').value);
+
+            const totalInvestment = implementationCost + marketingCost;
+            const profit = returnedAmount - totalInvestment;
+            const roi = (profit / totalInvestment) * 100;
+
+            displayResults(totalInvestment, profit, roi);
+            document.getElementById('step2').classList.remove('active');
+            document.getElementById('results').classList.add('active');
+        }
+
+        function displayResults(investment, profit, roi) {
+            const resultText = document.getElementById('resultText');
+            resultText.innerHTML = `
+                <p><strong>Total Investment:</strong> $${investment.toLocaleString()}</p>
+                <p><strong>Profit:</strong> $${profit.toLocaleString()}</p>
+                <p><strong>ROI:</strong> ${roi.toFixed(2)}%</p>
+            `;
+
+            if (chart) {
+                chart.destroy();
+            }
+
+            const ctx = document.getElementById('roiChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Investment', 'Profit'],
+                    datasets: [{
+                        data: [investment, profit],
+                        backgroundColor: ['#007bff', '#28a745']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        function resetForm() {
+            document.getElementById('roiForm').reset();
+            document.getElementById('results').classList.remove('active');
+            document.getElementById('step1').classList.add('active');
+            currentStep = 1;
+            if (chart) {
+                chart.destroy();
+                chart = null;
+            }
+        }
+
+        // Add event listeners for dropdowns to update placeholders
+        document.getElementById('appType').addEventListener('change', updatePlaceholders);
+        document.getElementById('industry').addEventListener('change', updatePlaceholders);
+    </script>
+</body>
+</html>
